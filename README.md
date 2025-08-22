@@ -262,35 +262,228 @@ pip install -r requirements.txt
 python -c "import librosa, sklearn, pandas, numpy; print('All packages installed successfully!')"
 ```
 
-## 📋 Complete Workflow Example
+## 📋 Complete End-to-End Workflow
 
-### Step-by-Step Pipeline
+### **Step-by-Step Pipeline: From Data to Deployment**
+
+This section walks you through the complete process from storing your audio data to running inference on new files.
+
+#### **Phase 1: Data Storage & Organization**
 
 ```bash
-# 1. Prepare your data
-# Place .wav files in data/raw/ subfolders (ship/, animal/, submarine/, noise/)
+# 1. Create the folder structure
+mkdir -p data/raw/ship data/raw/animal data/raw/submarine data/raw/noise
 
-# 2. Extract features from all audio files
+# 2. Place your .wav files in appropriate subfolders
+# Example structure:
+data/raw/
+├── ship/
+│   ├── ship_engine_001.wav
+│   ├── ship_propeller_002.wav
+│   └── vessel_003.wav
+├── animal/
+│   ├── whale_song_001.wav
+│   ├── dolphin_clicks_002.wav
+│   └── fish_sounds_003.wav
+├── submarine/
+│   ├── sub_sonar_001.wav
+│   ├── underwater_vehicle_002.wav
+│   └── sub_propulsion_003.wav
+└── noise/
+    ├── ocean_waves_001.wav
+    ├── ambient_currents_002.wav
+    └── background_noise_003.wav
+```
+
+**File Requirements:**
+- **Format**: `.wav` files (16-bit PCM recommended)
+- **Duration**: 3-5 seconds per clip
+- **Quality**: Clear audio with minimal background noise
+- **Naming**: Use descriptive names that indicate the class
+
+#### **Phase 2: Feature Extraction**
+
+```bash
+# Extract numerical features from all audio files
 python src/feature_extraction.py
 
-# 3. Train the classifier
+# This will:
+# - Process all .wav files in data/raw/
+# - Extract MFCCs, spectral features, and ZCR
+# - Save features to data/features/features.csv
+# - Create feature_scaler.pkl for normalization
+```
+
+**Expected Output:**
+```
+data/features/
+├── features.csv              # Main features file with labels
+└── feature_scaler.pkl       # Feature normalization scaler
+```
+
+**Features Extracted:**
+- **MFCCs**: 13 Mel-frequency cepstral coefficients
+- **Spectral**: Centroid, bandwidth, rolloff
+- **ZCR**: Zero-crossing rate
+- **Statistical**: Mean, std, min, max for each feature
+
+#### **Phase 3: Model Training**
+
+```bash
+# Train the Random Forest classifier
 python src/train_classifier.py
 
-# 4. Evaluate model performance
+# This will:
+# - Load features from data/features/features.csv
+# - Split data into training (80%) and testing (20%) sets
+# - Train Random Forest classifier
+# - Evaluate performance metrics
+# - Save trained model and artifacts
+```
+
+**Expected Output:**
+```
+models/
+├── random_forest_YYYYMMDD_HHMMSS.pkl    # Trained classifier
+├── scaler_YYYYMMDD_HHMMSS.pkl           # Feature scaler
+├── label_encoder_YYYYMMDD_HHMMSS.pkl    # Class label encoder
+├── feature_names_YYYYMMDD_HHMMSS.json   # Feature names
+├── evaluation_results_YYYYMMDD_HHMMSS.json  # Training metrics
+└── model_metadata_YYYYMMDD_HHMMSS.json  # Model information
+```
+
+**Training Metrics Displayed:**
+- Training/Test accuracy, precision, recall, F1-score
+- Feature importance rankings
+- Cross-validation scores (if dataset size allows)
+
+#### **Phase 4: Model Evaluation**
+
+```bash
+# Evaluate the trained model performance
 python src/evaluate.py
 
-# 5. Run inference on new audio
-python src/inference.py data/raw/test_recording.wav
+# This will:
+# - Load the trained model from models/
+# - Run evaluation on test data
+# - Display confusion matrix
+# - Show detailed performance metrics
+# - Generate evaluation report
 ```
 
-### Expected Output Files
+**Evaluation Output:**
+- Console summary of performance metrics
+- Confusion matrix visualization
+- Detailed classification report
+- Model performance analysis
+
+#### **Phase 5: Testing with New Audio Files**
+
+```bash
+# Test the trained model on a new .wav file
+python src/inference.py path/to/your/new_audio.wav
+
+# Examples:
+python src/inference.py data/raw/test_recording.wav
+python src/inference.py C:\Users\YourName\Downloads\mystery_sound.wav
+python src/inference.py --output results.json data/raw/new_file.wav
 ```
-data/features/features.csv        # Extracted features
-models/                           # Trained models
-├── random_forest_*.pkl           # Classifier
-├── scaler_*.pkl                  # Feature scaler
-├── label_encoder_*.pkl           # Label encoder
-└── evaluation_results_*.json     # Training metrics
+
+**What Happens During Inference:**
+1. **🔍 Load Audio**: Reads your `.wav` file
+2. **🧹 Preprocess**: Applies band-pass filtering and normalization
+3. **🎯 Detect Anomalies**: Finds interesting sound segments
+4. **📊 Extract Features**: Computes the same features used in training
+5. **🤖 Classify**: Uses your trained model to predict classes
+6. **📝 Output Results**: Shows timestamps, labels, and confidence scores
+
+**Inference Output Example:**
+```json
+{
+  "file": "new_recording.wav",
+  "detections": [
+    {
+      "start": 15.2,
+      "end": 18.7,
+      "label": "ship",
+      "confidence": 0.89
+    },
+    {
+      "start": 45.1,
+      "end": 48.3,
+      "label": "animal",
+      "confidence": 0.76
+    }
+  ]
+}
+```
+
+### **Complete Command Sequence**
+
+```bash
+# Run the entire pipeline from start to finish:
+
+# 1. Extract features
+python src/feature_extraction.py
+
+# 2. Train classifier
+python src/train_classifier.py
+
+# 3. Evaluate model
+python src/evaluate.py
+
+# 4. Test with new audio
+python src/inference.py data/raw/test_file.wav
+```
+
+### **Expected File Structure After Complete Pipeline**
+
+```
+underwater-classification/
+├── data/
+│   ├── raw/                    # Your original .wav files
+│   │   ├── ship/              # Ship recordings
+│   │   ├── animal/            # Animal sounds
+│   │   ├── submarine/         # Submarine sounds
+│   │   └── noise/             # Ambient noise
+│   ├── processed/             # Cleaned audio (if preprocessing used)
+│   └── features/              # Extracted features
+│       ├── features.csv       # Main features file
+│       └── feature_scaler.pkl # Feature scaler
+├── src/                       # Source code
+├── models/                    # Trained models and artifacts
+│   ├── random_forest_*.pkl   # Trained classifier
+│   ├── scaler_*.pkl          # Feature scaler
+│   ├── label_encoder_*.pkl   # Label encoder
+│   └── *.json                # Metadata and results
+└── README.md                  # This documentation
+```
+
+### **Troubleshooting Common Issues**
+
+**"No model files found"**
+```bash
+# Check what models you have
+dir models
+
+# Use specific model directory
+python src/evaluate.py --model-dir models/random_forest_20241201_143022
+```
+
+**"Audio file not found"**
+```bash
+# Check file path and existence
+dir "path\to\your\audio.wav"
+
+# Use absolute path if needed
+python src/inference.py "C:\full\path\to\audio.wav"
+```
+
+**"Feature extraction failed"**
+```bash
+# Verify audio files are valid .wav format
+# Check file permissions and accessibility
+# Ensure files aren't corrupted
 ```
 
 ## 📚 Dataset Sources
@@ -376,8 +569,3 @@ done
 - **Large datasets**: Process files in batches
 - **Parallel processing**: Use multiple CPU cores
 - **Memory management**: Process one file at a time for very large datasets
-
-
-## 📝 License
-
-This project is open source. Please check individual dependencies for their respective licenses.
